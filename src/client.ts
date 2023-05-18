@@ -561,9 +561,14 @@ export default class Client implements ClientInterface {
         });
       }
 
-      this.outputChannel.appendLine(">> Running `bundle install`...");
+      const bundlerCmd = ["install", "--prefer-local"];
+      const bundlerCmdStr = bundlerCmd.join(" ");
 
-      const install = spawn("bundle", ["install"], {
+      this.outputChannel.appendLine(
+        `>> Running \`bundle ${bundlerCmdStr}\`...`
+      );
+
+      const install = spawn("bundle", bundlerCmd, {
         shell: true,
         cwd: this.workingFolder,
         signal: abortController.signal,
@@ -597,13 +602,13 @@ export default class Client implements ClientInterface {
         stderr.close();
 
         this.outputChannel.appendLine(
-          `>> \`bundle install\` exited with code ${code}`
+          `>> \`bundle ${bundlerCmdStr}\` exited with code ${code}`
         );
 
         if (code === 0) {
           resolve();
         } else {
-          reject(new Error(`bundle install exited with code ${code}`));
+          reject(new Error(`bundle ${bundlerCmdStr} exited with code ${code}`));
         }
       });
 
