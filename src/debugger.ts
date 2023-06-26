@@ -164,7 +164,7 @@ export class Debugger
         ],
         {
           shell: true,
-          env: configuration.env,
+          env: Object.assign(configuration.env, { DISABLE_SPRING: "1" }),
           cwd: this.workingFolder,
         }
       );
