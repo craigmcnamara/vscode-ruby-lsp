@@ -22,10 +22,6 @@ const LSP_NAME = "Ruby LSP";
 const asyncExec = promisify(exec);
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 
-interface EnabledFeatures {
-  [key: string]: boolean;
-}
-
 export default class Client implements ClientInterface {
   private client: LanguageClient | undefined;
   private workingFolder: string;
@@ -113,7 +109,9 @@ export default class Client implements ClientInterface {
       outputChannel: this.outputChannel,
       revealOutputChannelOn: RevealOutputChannelOn.Never,
       initializationOptions: {
-        enabledFeatures: this.listOfEnabledFeatures(),
+        enabledFeatures: vscode.workspace
+          .getConfiguration("rubyLsp")
+          .get("enabledFeatures")!,
         experimentalFeaturesEnabled: configuration.get(
           "enableExperimentalFeatures"
         ),
@@ -432,13 +430,6 @@ export default class Client implements ClientInterface {
     watcher.onDidChange(this.restart.bind(this));
     watcher.onDidCreate(this.restart.bind(this));
     watcher.onDidDelete(this.restart.bind(this));
-  }
-
-  private listOfEnabledFeatures(): string[] {
-    const configuration = vscode.workspace.getConfiguration("rubyLsp");
-    const features: EnabledFeatures = configuration.get("enabledFeatures")!;
-
-    return Object.keys(features).filter((key) => features[key]);
   }
 
   private async projectHasDependency(gemName: RegExp): Promise<boolean> {
