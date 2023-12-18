@@ -14,13 +14,13 @@ export class Debugger
 {
   private debugProcess?: ChildProcessWithoutNullStreams;
   private readonly console = vscode.debug.activeDebugConsole;
-  private readonly currentActiveWorkspace: () => Workspace | undefined;
+  private readonly getWorkspace: (uri: vscode.Uri) => Workspace | undefined;
 
   constructor(
     context: vscode.ExtensionContext,
-    currentActiveWorkspace: () => Workspace | undefined,
+    getWorkspace: (uri: vscode.Uri) => Workspace | undefined,
   ) {
-    this.currentActiveWorkspace = currentActiveWorkspace;
+    this.getWorkspace = getWorkspace;
 
     context.subscriptions.push(
       vscode.debug.registerDebugConfigurationProvider("ruby_lsp", this),
@@ -80,14 +80,18 @@ export class Debugger
   // insert defaults for the user. The most important thing is making sure the Ruby environment is a part of it so that
   // we launch using the right bundle and Ruby version
   resolveDebugConfiguration?(
-    _folder: vscode.WorkspaceFolder | undefined,
+    folder: vscode.WorkspaceFolder | undefined,
     debugConfiguration: vscode.DebugConfiguration,
     _token?: vscode.CancellationToken,
   ): vscode.ProviderResult<vscode.DebugConfiguration> {
-    const workspace = this.currentActiveWorkspace();
+    if (!folder) {
+      throw new Error("Debugging requires a workspace folder to be opened");
+    }
+
+    const workspace = this.getWorkspace(folder.uri);
 
     if (!workspace) {
-      throw new Error("Debugging requires a workspace folder to be opened");
+      throw new Error(`Couldn't find workspace ${folder.name}`);
     }
 
     if (debugConfiguration.env) {
@@ -167,13 +171,12 @@ export class Debugger
     let initialMessage = "";
     let initialized = false;
 
-    const workspace = this.currentActiveWorkspace();
-
-    if (!workspace) {
+    const workspaceFolder = session.workspaceFolder;
+    if (!workspaceFolder) {
       throw new Error("Debugging requires a workspace folder to be opened");
     }
 
-    const cwd = workspace.workspaceFolder.uri.fsPath;
+    const cwd = workspaceFolder.uri.fsPath;
     const sockPath = this.socketPath(cwd);
     const configuration = session.configuration;
 
